@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --success: #22c55e;
+      --error: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 20px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .header-desc {
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    label {
+      font-weight: 600;
+      color: var(--text);
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .url-count {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--accent);
+      background: rgba(56, 189, 248, 0.1);
+      padding: 2px 8px;
+      border-radius: 12px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 140px;
+      background: #090d16;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: #fff;
+      font-family: monospace;
+      font-size: 12px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+    }
+
+    .direction-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .radio-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .radio-card:hover {
+      border-color: var(--accent);
+    }
+
+    .radio-card.active {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.08);
+    }
+
+    .radio-card input {
+      accent-color: var(--accent);
+    }
+
+    .radio-card label {
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .options-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      background: var(--card-bg);
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    select {
+      background: #090d16;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-weight: 400;
+    }
+
+    .checkbox-label input {
+      accent-color: var(--accent);
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background: #334155;
+      color: #cbd5e1;
+    }
+
+    .btn-secondary:hover {
+      background: #475569;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    #statusMessage {
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      display: none;
+    }
+
+    #statusMessage.success {
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid var(--success);
+      color: #4ade80;
+    }
+
+    #statusMessage.error {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid var(--error);
+      color: #f87171;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <p class="header-desc">Paste image URLs below to insert them into cells starting at your current active selection.</p>
+
+    <div class="form-group">
+      <label for="urlInput">
+        Image URLs (One per line)
+        <span class="url-count" id="urlCount">0 URLs</span>
+      </label>
+      <textarea id="urlInput" placeholder="https://example.com/image1.png&#10;https://example.com/image2.jpg&#10;https://example.com/image3.webp" oninput="updateUrlCount()"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Insertion Direction</label>
+      <div class="direction-options">
+        <div class="radio-card active" onclick="selectDirection('horizontal')" id="cardHorizontal">
+          <input type="radio" id="dirHorizontal" name="direction" value="horizontal" checked>
+          <label for="dirHorizontal">↔️ Horizontal (Row)</label>
+        </div>
+        <div class="radio-card" onclick="selectDirection('vertical')" id="cardVertical">
+          <input type="radio" id="dirVertical" name="direction" value="vertical">
+          <label for="dirVertical">↕️ Vertical (Column)</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="options-row">
+      <label for="insertMode" style="font-weight: 500;">Image Type:</label>
+      <select id="insertMode">
+        <option value="cellImage">In-Cell Image (Native)</option>
+        <option value="formula">=IMAGE("url") Formula</option>
+      </select>
+    </div>
+
+    <div class="options-row">
+      <label class="checkbox-label">
+        <input type="checkbox" id="autoResize" checked>
+        <span>Auto-fit cell size (height/width)</span>
+      </label>
+      <button class="btn btn-secondary" style="flex: initial; padding: 4px 8px; font-size: 11px;" onclick="loadSampleUrls()">Demo URLs</button>
+    </div>
+
+    <div id="statusMessage"></div>
+
+    <div class="btn-group">
+      <button class="btn btn-primary" id="btnInsert" onclick="startInsertion()">
+        <span class="spinner" id="btnSpinner"></span>
+        <span id="btnText">Insert Images</span>
+      </button>
+      <button class="btn btn-secondary" onclick="google.script.host.close()" style="flex: 0.4;">Close</button>
+    </div>
+  </div>
+
+  <script>
+    function updateUrlCount() {
+      const text = document.getElementById('urlInput').value;
+      const urls = text.split('\n').map(u => u.trim()).filter(u => u.length > 0);
+      document.getElementById('urlCount').textContent = `${urls.length} URL${urls.length === 1 ? '' : 's'}`;
+    }
+
+    function selectDirection(dir) {
+      document.getElementById('dirHorizontal').checked = (dir === 'horizontal');
+      document.getElementById('dirVertical').checked = (dir === 'vertical');
+      
+      document.getElementById('cardHorizontal').classList.toggle('active', dir === 'horizontal');
+      document.getElementById('cardVertical').classList.toggle('active', dir === 'vertical');
+    }
+
+    function loadSampleUrls() {
+      const samples = [
+        "https://picsum.photos/id/10/300/200",
+        "https://picsum.photos/id/20/300/200",
+        "https://picsum.photos/id/30/300/200",
+        "https://picsum.photos/id/40/300/200"
+      ];
+      document.getElementById('urlInput').value = samples.join('\n');
+      updateUrlCount();
+    }
+
+    function startInsertion() {
+      const text = document.getElementById('urlInput').value;
+      const urls = text.split('\n').map(u => u.trim()).filter(u => u.length > 0);
+
+      const statusBox = document.getElementById('statusMessage');
+      statusBox.style.display = 'none';
+
+      if (urls.length === 0) {
+        showStatus('Please paste at least one valid image URL.', false);
+        return;
+      }
+
+      const direction = document.querySelector('input[name="direction"]:checked').value;
+      const mode = document.getElementById('insertMode').value;
+      const autoResize = document.getElementById('autoResize').checked;
+
+      setLoading(true);
+
+      const payload = {
+        urls: urls,
+        direction: direction,
+        mode: mode,
+        autoResize: autoResize
+      };
+
+      google.script.run
+        .withSuccessHandler(onSuccess)
+        .withFailureHandler(onFailure)
+        .processImageUrls(payload);
+    }
+
+    function onSuccess(res) {
+      setLoading(false);
+      if (res.success) {
+        showStatus(res.message, true);
+      } else {
+        showStatus(res.error || 'Failed to insert images.', false);
+      }
+    }
+
+    function onFailure(err) {
+      setLoading(false);
+      showStatus('Apps Script Error: ' + err.message, false);
+    }
+
+    function setLoading(isLoading) {
+      const btn = document.getElementById('btnInsert');
+      const spinner = document.getElementById('btnSpinner');
+      const btnText = document.getElementById('btnText');
+
+      btn.disabled = isLoading;
+      spinner.style.display = isLoading ? 'inline-block' : 'none';
+      btnText.textContent = isLoading ? 'Inserting...' : 'Insert Images';
+    }
+
+    function showStatus(msg, isSuccess) {
+      const statusBox = document.getElementById('statusMessage');
+      statusBox.textContent = msg;
+      statusBox.className = isSuccess ? 'success' : 'error';
+      statusBox.style.display = 'block';
+    }
+  </script>
+</body>
+</html>

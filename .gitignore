@@ -1,0 +1,9 @@
+# Google Apps Script / Clasp ignore
+.clasp.json
+.claspignore
+node_modules/
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
