@@ -156,6 +156,81 @@
       accent-color: var(--accent);
     }
 
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      background: #090d16;
+      padding: 22px 12px;
+      text-align: center;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: all 0.2s;
+      font-size: 12px;
+    }
+
+    .drop-zone:hover,
+    .drop-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.05);
+      color: var(--text);
+    }
+
+    .drop-zone input[type="file"] {
+      display: none;
+    }
+
+    .drop-zone strong {
+      color: var(--accent);
+    }
+
+    .file-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 160px;
+      overflow-y: auto;
+      margin-top: 6px;
+    }
+
+    .file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    .file-item .file-name {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+
+    .file-item .file-size {
+      color: var(--text-muted);
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+
+    .file-remove {
+      background: none;
+      border: none;
+      color: var(--error);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 0 4px;
+      flex-shrink: 0;
+    }
+
+    .file-remove:hover {
+      transform: scale(1.2);
+    }
+
     .btn-group {
       display: flex;
       gap: 8px;
@@ -219,6 +294,7 @@
       border-radius: 8px;
       font-size: 12px;
       display: none;
+      word-break: break-word;
     }
 
     #statusMessage.success {
@@ -237,14 +313,40 @@
 <body>
 
   <div class="container">
-    <p class="header-desc">Paste image URLs below to insert them into cells starting at your current active selection.</p>
+    <p class="header-desc">Insert images from image URLs or upload them directly from your computer.</p>
 
     <div class="form-group">
+      <label>Image Source</label>
+      <div class="direction-options">
+        <div class="radio-card active" onclick="selectSource('url')" id="cardSourceUrl">
+          <input type="radio" id="srcUrl" name="source" value="url" checked>
+          <label for="srcUrl">🔗 Image URLs</label>
+        </div>
+        <div class="radio-card" onclick="selectSource('upload')" id="cardSourceUpload">
+          <input type="radio" id="srcUpload" name="source" value="upload">
+          <label for="srcUpload">📤 From Computer</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group" id="urlSection">
       <label for="urlInput">
         Image URLs (One per line)
         <span class="url-count" id="urlCount">0 URLs</span>
       </label>
       <textarea id="urlInput" placeholder="https://example.com/image1.png&#10;https://example.com/image2.jpg&#10;https://example.com/image3.webp" oninput="updateUrlCount()"></textarea>
+    </div>
+
+    <div class="form-group" id="uploadSection" style="display:none;">
+      <label for="fileInput">
+        Select images from your computer
+        <span class="url-count" id="fileCount">0 files</span>
+      </label>
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInput" accept="image/*" multiple>
+        <span>📁 <strong>Click to choose</strong> images<br>or drag &amp; drop them here<br><span style="font-size:11px; color:#64748b;">Images will be uploaded to Google Drive and linked into cells.</span></span>
+      </div>
+      <div class="file-list" id="fileList"></div>
     </div>
 
     <div class="form-group">
@@ -289,16 +391,29 @@
   </div>
 
   <script>
+    let selectedFiles = [];
+
     function updateUrlCount() {
       const text = document.getElementById('urlInput').value;
       const urls = text.split('\n').map(u => u.trim()).filter(u => u.length > 0);
       document.getElementById('urlCount').textContent = `${urls.length} URL${urls.length === 1 ? '' : 's'}`;
     }
 
+    function selectSource(src) {
+      document.getElementById('srcUrl').checked = (src === 'url');
+      document.getElementById('srcUpload').checked = (src === 'upload');
+
+      document.getElementById('cardSourceUrl').classList.toggle('active', src === 'url');
+      document.getElementById('cardSourceUpload').classList.toggle('active', src === 'upload');
+
+      document.getElementById('urlSection').style.display = (src === 'url') ? 'flex' : 'none';
+      document.getElementById('uploadSection').style.display = (src === 'upload') ? 'flex' : 'none';
+    }
+
     function selectDirection(dir) {
       document.getElementById('dirHorizontal').checked = (dir === 'horizontal');
       document.getElementById('dirVertical').checked = (dir === 'vertical');
-      
+
       document.getElementById('cardHorizontal').classList.toggle('active', dir === 'horizontal');
       document.getElementById('cardVertical').classList.toggle('active', dir === 'vertical');
     }
@@ -314,23 +429,139 @@
       updateUrlCount();
     }
 
-    function startInsertion() {
-      const text = document.getElementById('urlInput').value;
-      const urls = text.split('\n').map(u => u.trim()).filter(u => u.length > 0);
+    function readFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve({ name: file.name, mimeType: file.type || 'image/png', dataUrl: e.target.result });
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+    }
 
+    function handleFiles(fileList) {
+      const files = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+      if (files.length === 0) return;
+
+      const tasks = files.map(readFile);
+      Promise.all(tasks).then(results => {
+        selectedFiles = selectedFiles.concat(results);
+        renderFileList();
+      }).catch(err => {
+        showStatus('Failed to read selected files: ' + err.message, false);
+      });
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    function renderFileList() {
+      document.getElementById('fileCount').textContent =
+        `${selectedFiles.length} file${selectedFiles.length === 1 ? '' : 's'}`;
+
+      const list = document.getElementById('fileList');
+      list.innerHTML = '';
+
+      selectedFiles.forEach((file, idx) => {
+        const item = document.createElement('div');
+        item.className = 'file-item';
+
+        const name = document.createElement('span');
+        name.className = 'file-name';
+        name.title = file.name;
+        name.textContent = file.name;
+
+        const size = document.createElement('span');
+        size.className = 'file-size';
+        size.textContent = formatBytes(file.dataUrl.length * 0.75);
+
+        const remove = document.createElement('button');
+        remove.className = 'file-remove';
+        remove.textContent = '✕';
+        remove.onclick = () => {
+          selectedFiles.splice(idx, 1);
+          renderFileList();
+        };
+
+        item.appendChild(name);
+        item.appendChild(size);
+        item.appendChild(remove);
+        list.appendChild(item);
+      });
+    }
+
+    function setupFileInput() {
+      const input = document.getElementById('fileInput');
+      const zone = document.getElementById('dropZone');
+
+      input.addEventListener('change', () => {
+        handleFiles(input.files);
+        input.value = '';
+      });
+
+      zone.addEventListener('click', (e) => {
+        if (e.target !== zone && e.target.tagName !== 'SPAN' && e.target.tagName !== 'STRONG') return;
+        input.click();
+      });
+
+      zone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        zone.classList.add('dragover');
+      });
+
+      zone.addEventListener('dragleave', () => {
+        zone.classList.remove('dragover');
+      });
+
+      zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        zone.classList.remove('dragover');
+        e.dataTransfer.files.length > 0 && handleFiles(e.dataTransfer.files);
+      });
+    }
+
+    function startInsertion() {
       const statusBox = document.getElementById('statusMessage');
       statusBox.style.display = 'none';
 
-      if (urls.length === 0) {
-        showStatus('Please paste at least one valid image URL.', false);
-        return;
-      }
-
+      const source = document.querySelector('input[name="source"]:checked').value;
       const direction = document.querySelector('input[name="direction"]:checked').value;
       const mode = document.getElementById('insertMode').value;
       const autoResize = document.getElementById('autoResize').checked;
 
       setLoading(true);
+
+      if (source === 'upload') {
+        if (selectedFiles.length === 0) {
+          setLoading(false);
+          showStatus('Please select at least one image from your computer.', false);
+          return;
+        }
+
+        const payload = {
+          files: selectedFiles,
+          direction: direction,
+          mode: mode,
+          autoResize: autoResize
+        };
+
+        google.script.run
+          .withSuccessHandler(onSuccess)
+          .withFailureHandler(onFailure)
+          .processUploadedImages(payload);
+        return;
+      }
+
+      const text = document.getElementById('urlInput').value;
+      const urls = text.split('\n').map(u => u.trim()).filter(u => u.length > 0);
+
+      if (urls.length === 0) {
+        setLoading(false);
+        showStatus('Please paste at least one valid image URL.', false);
+        return;
+      }
 
       const payload = {
         urls: urls,
@@ -375,6 +606,8 @@
       statusBox.className = isSuccess ? 'success' : 'error';
       statusBox.style.display = 'block';
     }
+
+    setupFileInput();
   </script>
 </body>
 </html>

@@ -7,6 +7,7 @@ A custom Google Apps Script project for Google Sheets that adds an interactive t
 ## 🌟 Features
 - **Custom Menu Button**: Adds a `⚡ Image Inserter` menu item directly in the Google Sheets menu bar.
 - **Interactive Popup Modal Dialog**: Sleek, modern UI for pasting multiple image URLs.
+- **Local Computer Upload**: Select/drag-drop images from your local disk — they are uploaded to a Google Drive folder and linked into cells automatically.
 - **Direction Options**:
   - ↔️ **Horizontal**: Inserts images across columns in the same row.
   - ↕️ **Vertical**: Inserts images down rows in the same column.
@@ -71,7 +72,9 @@ To link this local codebase with a GitHub repository:
 
 1. Click on any cell in your sheet where you want image insertion to start (e.g. `B2`).
 2. Click **`⚡ Image Inserter`** > **`Bulk Insert Images...`**.
-3. Paste image URLs (one per line).
+3. Choose an image source:
+   - **🔗 Image URLs**: Paste image URLs (one per line).
+   - **📤 From Computer**: Click or drag & drop images from your local disk (uploaded to the Drive folder `Google Sheet Images`).
 4. Select direction:
    - ↔️ **Horizontal (Row)** to fill cells to the right.
    - ↕️ **Vertical (Column)** to fill cells downwards.
